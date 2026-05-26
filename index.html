@@ -46,7 +46,21 @@
     .day-tab:hover { border-color: #555; }
     .day-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-    #status { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+    #searchInput {
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.8rem;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    #searchInput:focus { border-color: var(--accent); }
+    #searchInput::placeholder { color: var(--muted); }
+
+    #status { color: var(--muted); font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
 
     .gallery {
       padding: 1.5rem 2rem;
@@ -94,6 +108,8 @@
     }
     .expand-btn:hover { text-decoration: underline; }
 
+    mark { background: rgba(245,166,35,0.35); color: inherit; border-radius: 2px; padding: 0 1px; }
+
     .pagination {
       padding: 1.5rem 2rem 2.5rem;
       display: flex;
@@ -120,32 +136,93 @@
 
     .loading { grid-column: 1 / -1; padding: 4rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
 
-    /* Lightbox */
+    /* ── Lightbox ─────────────────────────────────────────── */
     .lightbox {
       display: none;
       position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.93);
       z-index: 100;
-      align-items: center; justify-content: center; flex-direction: column;
-      gap: 1rem; padding: 2rem;
+      background: #080808;
     }
-    .lightbox.open { display: flex; }
-    .lightbox img { max-width: 100%; max-height: 78vh; object-fit: contain; border-radius: 6px; }
-    .lightbox-meta { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; max-width: 720px; }
-    .lightbox-ts { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
-    .lightbox-cap { font-size: 0.875rem; color: #ccc; text-align: center; line-height: 1.65; }
+    .lightbox.open { display: flex; flex-direction: column; }
+
     .lightbox-close {
-      position: absolute; top: 1rem; right: 1.5rem;
-      background: none; border: none;
-      color: #888; font-size: 2rem; line-height: 1;
-      cursor: pointer;
+      position: absolute; top: 0.875rem; right: 1.25rem;
+      background: rgba(0,0,0,0.5); border: none;
+      color: #999; font-size: 1.5rem; line-height: 1;
+      cursor: pointer; z-index: 2;
+      border-radius: 50%; width: 2rem; height: 2rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.12s, background 0.12s;
     }
-    .lightbox-close:hover { color: #fff; }
+    .lightbox-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
+
+    /* Wide: image left, caption right */
+    .lb-inner {
+      display: flex;
+      flex: 1;
+      min-height: 0;         /* let flex children shrink */
+    }
+
+    .lb-img-pane {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem 1.5rem;
+      overflow: hidden;
+    }
+    .lb-img-pane img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+      display: block;
+    }
+
+    .lb-caption-pane {
+      width: 360px;
+      min-width: 260px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      padding: 3.5rem 1.5rem 1.5rem;
+      overflow-y: auto;          /* caption scrolls, page does not */
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .lb-ts { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
+    .lb-cap { font-size: 0.875rem; color: #ccc; line-height: 1.7; }
+
+    /* Narrow: image full-height top, caption scrolls below */
+    @media (max-width: 768px) {
+      .lb-inner {
+        flex-direction: column;
+        overflow-y: auto;          /* the inner div scrolls */
+        -webkit-overflow-scrolling: touch;
+      }
+      .lb-img-pane {
+        height: 100vh;
+        min-height: 100vh;
+        flex-shrink: 0;
+        padding: 3rem 1rem 1rem;
+      }
+      .lb-caption-pane {
+        width: 100%;
+        min-width: 0;
+        flex-shrink: 0;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        overflow-y: visible;       /* parent lb-inner handles scroll */
+        padding: 1.25rem 1rem 3rem;
+      }
+    }
 
     @media (max-width: 600px) {
       header, .controls, .gallery, .pagination { padding-left: 1rem; padding-right: 1rem; }
       .gallery { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
       .card-body { padding: 0.5rem; }
+      #searchInput { width: 100%; }
     }
     @media (max-width: 360px) {
       .gallery { grid-template-columns: 1fr; }
@@ -161,6 +238,7 @@
 
 <div class="controls">
   <div class="day-tabs" id="dayTabs"></div>
+  <input type="search" id="searchInput" placeholder="Search captions…" autocomplete="off" spellcheck="false">
   <span id="status"></span>
 </div>
 
@@ -172,10 +250,14 @@
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lbClose" aria-label="Close">&times;</button>
-  <img id="lbImg" src="" alt="">
-  <div class="lightbox-meta">
-    <span class="lightbox-ts" id="lbTs"></span>
-    <p class="lightbox-cap" id="lbCap"></p>
+  <div class="lb-inner" id="lbInner">
+    <div class="lb-img-pane">
+      <img id="lbImg" src="" alt="">
+    </div>
+    <div class="lb-caption-pane">
+      <span class="lb-ts" id="lbTs"></span>
+      <p class="lb-cap" id="lbCap"></p>
+    </div>
   </div>
 </div>
 
@@ -193,7 +275,9 @@
 
   let currentDay = DAYS[0];
   let currentPage = 1;
-  let entries = [];
+  let entries = [];      // raw loaded entries for current day
+  let filtered = [];     // entries after search filter
+  let searchTerms = [];
   const cache = {};
 
   // ── Day tabs ──────────────────────────────────────────────
@@ -207,6 +291,36 @@
     tabsEl.appendChild(btn);
   });
 
+  // ── Search ────────────────────────────────────────────────
+  document.getElementById('searchInput').addEventListener('input', function () {
+    const raw = this.value.trim().toLowerCase();
+    searchTerms = raw ? raw.split(/\s+/) : [];
+    currentPage = 1;
+    applyFilter();
+    render();
+  });
+
+  function applyFilter() {
+    if (!searchTerms.length) { filtered = entries; return; }
+    filtered = entries.filter(e => {
+      const cap = e.cap.toLowerCase();
+      return searchTerms.every(t => cap.includes(t));
+    });
+  }
+
+  // Returns highlighted HTML string, or null if no active search.
+  function highlight(text) {
+    if (!searchTerms.length) return null;
+    const escaped = searchTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return text.replace(new RegExp(`(${escaped.join('|')})`, 'gi'), '<mark>$1</mark>');
+  }
+
+  function setCapText(el, text) {
+    const hl = highlight(text);
+    if (hl !== null) el.innerHTML = hl; else el.textContent = text;
+  }
+
+  // ── Load day ──────────────────────────────────────────────
   async function selectDay(day) {
     currentDay = day;
     currentPage = 1;
@@ -215,6 +329,7 @@
 
     if (cache[day]) {
       entries = cache[day];
+      applyFilter();
       render();
       return;
     }
@@ -228,28 +343,35 @@
       if (!res.ok) throw new Error(res.status);
       entries = await res.json();
       cache[day] = entries;
-    } catch (err) {
+    } catch {
       document.getElementById('gallery').innerHTML =
         `<div class="loading">Could not load data for ${DAY_LABELS[day]}.<br>Run <code>python build.py</code> to generate the data/ directory.</div>`;
       return;
     }
+    applyFilter();
     render();
   }
 
   // ── Render grid ───────────────────────────────────────────
   function render() {
-    const total = entries.length;
+    const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     currentPage = Math.min(currentPage, totalPages);
     const start = (currentPage - 1) * PAGE_SIZE;
-    const slice = entries.slice(start, start + PAGE_SIZE);
+    const slice = filtered.slice(start, start + PAGE_SIZE);
 
-    document.getElementById('status').textContent =
-      `${total.toLocaleString()} images · page ${currentPage}/${totalPages}`;
+    const isFiltered = searchTerms.length > 0;
+    document.getElementById('status').textContent = isFiltered
+      ? `${total.toLocaleString()} of ${entries.length.toLocaleString()} · page ${currentPage}/${totalPages}`
+      : `${entries.length.toLocaleString()} images · page ${currentPage}/${totalPages}`;
 
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '';
-    slice.forEach(e => gallery.appendChild(makeCard(e)));
+    if (slice.length === 0) {
+      gallery.innerHTML = '<div class="loading">No results.</div>';
+    } else {
+      slice.forEach(e => gallery.appendChild(makeCard(e)));
+    }
 
     renderPagination(totalPages);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -276,7 +398,7 @@
 
     const cap = document.createElement('p');
     cap.className = 'card-cap collapsed';
-    cap.textContent = e.cap;
+    setCapText(cap, e.cap);
 
     const btn = document.createElement('button');
     btn.className = 'expand-btn';
@@ -297,41 +419,34 @@
     pg.innerHTML = '';
     if (totalPages <= 1) return;
 
-    function addBtn(label, page, disabled) {
+    const addBtn = (label, page, disabled) => {
       const btn = document.createElement('button');
       btn.className = 'page-btn' + (page === currentPage ? ' active' : '');
       btn.textContent = label;
       btn.disabled = !!disabled;
-      if (!disabled && page !== currentPage) {
-        btn.onclick = () => { currentPage = page; render(); };
-      }
+      if (!disabled && page !== currentPage) btn.onclick = () => { currentPage = page; render(); };
       pg.appendChild(btn);
-    }
-
-    function addEllipsis() {
+    };
+    const addEllipsis = () => {
       const s = document.createElement('span');
       s.className = 'page-ellipsis';
       s.textContent = '…';
       pg.appendChild(s);
-    }
+    };
 
     addBtn('‹', currentPage - 1, currentPage === 1);
-
-    const pages = getPageRange(currentPage, totalPages);
     let prev = null;
-    pages.forEach(p => {
+    getPageRange(currentPage, totalPages).forEach(p => {
       if (prev !== null && p - prev > 1) addEllipsis();
       addBtn(p, p, false);
       prev = p;
     });
-
     addBtn('›', currentPage + 1, currentPage === totalPages);
   }
 
   function getPageRange(cur, total) {
-    const delta = 2;
     const set = new Set([1, total]);
-    for (let i = Math.max(2, cur - delta); i <= Math.min(total - 1, cur + delta); i++) set.add(i);
+    for (let i = Math.max(2, cur - 2); i <= Math.min(total - 1, cur + 2); i++) set.add(i);
     return [...set].sort((a, b) => a - b);
   }
 
@@ -341,13 +456,23 @@
   function openLightbox(e) {
     document.getElementById('lbImg').src = e.img;
     document.getElementById('lbTs').textContent = e.ts;
-    document.getElementById('lbCap').textContent = e.cap;
+    setCapText(document.getElementById('lbCap'), e.cap);
+    // reset scroll positions
+    document.getElementById('lbInner').scrollTop = 0;
+    document.querySelector('.lb-caption-pane').scrollTop = 0;
+    // lock page scroll
+    document.body.style.overflow = 'hidden';
     lightbox.classList.add('open');
   }
 
-  document.getElementById('lbClose').onclick = () => lightbox.classList.remove('open');
-  lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.classList.remove('open'); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') lightbox.classList.remove('open'); });
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('lbClose').onclick = closeLightbox;
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   // ── Init ──────────────────────────────────────────────────
   selectDay(DAYS[0]);
