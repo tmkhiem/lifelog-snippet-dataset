@@ -13,7 +13,7 @@ def build():
     total = 0
     for caption_file in sorted(caption_dir.glob("*.txt")):
         date_str = caption_file.stem          # e.g. "20200101"
-        month = date_str[4:6]                 # e.g. "01"
+        day_folder = date_str[6:8]            # e.g. "01"→07, matches keyframes/ subdir
         entries = []
 
         with open(caption_file, encoding="utf-8") as f:
@@ -26,7 +26,7 @@ def build():
 
                 date_part = timestamp[:10].replace("-", "")   # "20200101"
                 time_part = timestamp[11:].replace(":", "")   # "044942"
-                img = f"keyframes/{month}/{date_part}_{time_part}_000.jpg"
+                img = f"keyframes/{day_folder}/{date_part}_{time_part}_000.jpg"
 
                 entries.append({"img": img, "ts": timestamp, "cap": caption})
 
